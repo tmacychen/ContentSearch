@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/apex/log/handlers/cli"
+	"github.com/apex/log/handlers/text"
+
+	"github.com/apex/log"
 	"github.com/spf13/cobra"
 )
 
 var version = "0.5"
-var recursive bool
+var isRecursive bool
+var isDebug bool
 var content, path string
 
 var csCmd = &cobra.Command{
@@ -23,20 +28,23 @@ var csCmd = &cobra.Command{
 	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
 		//main funciton is here
-		for _, i := range args {
-			fmt.Printf("args :%v\n", i)
-		}
 		if err := checkArgs(args); err != nil {
-			fmt.Printf("Error : %v\n\n", err)
+			log.Errorf("Error : %v\n\n", err)
 			cmd.Usage()
 			os.Exit(1)
+		}
+		for _, i := range args {
+			log.Debugf("args :%v\n", i)
 		}
 
 	},
 }
 
 func init() {
-	csCmd.PersistentFlags().BoolVarP(&recursive, "recursive for directory", "r", false, "-r [dir]")
+	log.SetHandler(cli.Default)
+	log.SetLevel(log.InfoLevel)
+	csCmd.PersistentFlags().BoolVarP(&isRecursive, "recursive", "r", false, "recursive for directory")
+	csCmd.PersistentFlags().BoolVarP(&isDebug, "debug", "d", false, "debug mode")
 }
 
 //Execute : execute the csCmd
@@ -67,7 +75,7 @@ func checkArgs(args []string) (err error) {
 		}
 	}
 	d := fi.Mode().IsDir()
-	if recursive {
+	if isRecursive {
 		if !d {
 			return errors.New("需要一个目录")
 		}
@@ -75,6 +83,11 @@ func checkArgs(args []string) (err error) {
 		if d {
 			return errors.New("需要一个文件")
 		}
+	}
+	if isDebug {
+		log.Info("set debug")
+		log.SetHandler(text.Default)
+		log.SetLevel(log.DebugLevel)
 	}
 	return nil
 }
