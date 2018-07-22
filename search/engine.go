@@ -1,12 +1,11 @@
 package search
 
 import (
-	"fmt"
-	"log"
 	"sync"
 	"time"
 
-	"oschina.net/ContentSearch/filePool"
+	"github.com/apex/log"
+	"github.com/tmacychen/ContentSearch/filePool"
 )
 
 //Key 要检索的关键字符串
@@ -69,6 +68,7 @@ type Task struct {
 	key       Key
 	res       *Result
 	workerNum int
+	end       bool
 	workers   []*Worker //worker set
 }
 
@@ -76,16 +76,19 @@ type Task struct {
 //参数 key：需要搜索的关键字 n：并发数量
 //返回值：初始化完成的Task指针
 //通常n与处理器个数相同
-func TaskInit(key Key, n int) *Task {
+func TaskInit(k Key, n int) *Task {
 	if n <= 0 {
 		log.Fatalf("worker group's number < 0")
 		return nil
 	}
-	t := new(Task)
-	t.key = key
-	t.workerNum = n
-	t.res = new(Result)
-	t.res.locker = new(sync.Mutex)
+	t := &Task{
+		key:       k,
+		workerNum: n,
+		end:       false,
+		res: &Result{
+			locker: new(sync.Mutex),
+		},
+	}
 
 	for n > 0 {
 		w := NewWorker()
@@ -98,6 +101,12 @@ func TaskInit(key Key, n int) *Task {
 //GetKey 获取当前任务的关键字
 func (t *Task) GetKey() Key {
 	return t.key
+}
+
+//SetEnd 设置当前任务准备结束。当文件集合读取所有文件后，会设置
+//task的状态为end,task会执行所有任务后结束
+func (t *Task) SetEnd(s bool) {
+	t.end = s
 }
 
 //GetResult 获取此任务的全部结果
@@ -135,15 +144,15 @@ func (t *Task) getWorker() *Worker {
 func (t *Task) Exec(fs *filePool.FileSet) {
 	var wait sync.WaitGroup
 
-	for fs.Length() > 0 {
+	for !t.end || fs.Length() > 0 {
 		w := t.getWorker()
 		if w != nil {
 			wait.Add(1)
 			go func() {
 				s := fs.Get()
 				if s != "" {
-					log.Printf("Exec fs.Get:%v\n", s)
 					w.Do(s, t.key, t.res)
+					log.Debugf("end :%v \t len :%d \nExec fs.Get:%v\n", t.end, fs.Length(), s)
 				}
 				w.iamBusy(false)
 				wait.Done()
@@ -158,5 +167,5 @@ func (t *Task) Exec(fs *filePool.FileSet) {
 
 //Debug 调试用
 func (t *Task) Debug() {
-	fmt.Println("t.key:", t.GetKey())
+	log.Debugf("t.key:%v\n", t.GetKey())
 }

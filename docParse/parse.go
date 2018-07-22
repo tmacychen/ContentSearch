@@ -3,10 +3,7 @@ package docParse
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"strings"
-
-	"oschina.net/ContentSearch/myerr"
 )
 
 // DocType is an Int type
@@ -30,16 +27,16 @@ func NewParser() *Parser {
 	return p
 }
 
-func (p *Parser) SetPath(t DocType, path string) {
-	switch t {
-	case Word2003:
+func (p *Parser) Init(path string) error {
+	if strings.HasSuffix(path, ".doc") {
 		p.parserFunc = docParse
-	case Word2007:
+	} else if strings.HasSuffix(path, ".docx") {
 		p.parserFunc = docxParse
-	default:
-		myerr.PrintErr("error in NewParser", errors.New("unkonw type of document"))
+	} else {
+		return errors.New("unkonw type of document")
 	}
 	p.path = path
+	return nil
 }
 func (p *Parser) Path() string {
 	return p.path
@@ -58,7 +55,8 @@ func (p *Parser) GetBuf() *bytes.Buffer {
 	return p.buf
 }
 
-//测试用
-func (p *Parser) ShowBuf() {
-	fmt.Printf("buf :%v\n", p.buf)
-}
+//ShowBuf
+//func (p *Parser) ShowBuf() {
+//	fmt.Printf("buf :%v\n", p.buf)
+//}
+//

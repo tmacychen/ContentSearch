@@ -2,16 +2,15 @@ package search
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"unicode"
 
-	"oschina.net/ContentSearch/docParse"
+	"github.com/apex/log"
+	"github.com/tmacychen/ContentSearch/docParse"
 )
 
 type Worker struct {
 	parser    *docParse.Parser
-	filePath  string
 	isWorking bool
 }
 
@@ -24,27 +23,15 @@ func NewWorker() *Worker {
 
 const BOUND = 60
 
-//工作者会处理文档类型，选择对应的解析器将其转化为文本文档
+//Do 工作者会处理文档类型，选择对应的解析器将其转化为文本文档
 //
 func (w *Worker) Do(filePath string, key Key, res *Result) {
-	var d docParse.DocType
-	if strings.HasSuffix(filePath, ".doc") {
-		d = docParse.Word2003
-	} else if strings.HasSuffix(filePath, ".docx") {
-		d = docParse.Word2007
-	} else {
-		d = docParse.UnknowType
-		log.Fatalf("UnknowType")
+
+	if err := w.parser.Init(filePath); err != nil {
+		log.Errorf("work parse file errr :%v\n", err)
 		return
 	}
-
-	w.filePath = filePath
-	w.parser.SetPath(d, filePath)
-
-	if w.parser != nil && w.parser.Path() != "" {
-		w.parser.Parse()
-		//w.parser.ShowBuf()
-	}
+	w.parser.Parse()
 	//	fmt.Printf("search :%v\n", filePath)
 	search(w.parser, key, res)
 	w.parser.ClearBuf()
@@ -53,6 +40,8 @@ func (w *Worker) Do(filePath string, key Key, res *Result) {
 func (w *Worker) iamBusy(s bool) {
 	w.isWorking = s
 }
+
+//IsBusy shows that whether the woker is busy
 func (w *Worker) IsBusy() bool {
 	return w.isWorking
 }

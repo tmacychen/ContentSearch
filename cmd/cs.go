@@ -3,10 +3,16 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"runtime"
+	"strings"
+	"sync"
 
 	"github.com/apex/log/handlers/cli"
 	"github.com/apex/log/handlers/text"
+	"github.com/tmacychen/ContentSearch/filePool"
+	sech "github.com/tmacychen/ContentSearch/search"
 
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
@@ -15,6 +21,7 @@ import (
 var version = "0.5"
 var isRecursive bool
 var isDebug bool
+var isSingleFile bool
 var content, path string
 
 var csCmd = &cobra.Command{
@@ -33,10 +40,10 @@ var csCmd = &cobra.Command{
 			cmd.Usage()
 			os.Exit(1)
 		}
-		for _, i := range args {
-			log.Debugf("args :%v\n", i)
-		}
+		log.Debugf("path :%v\n", path)
+		log.Debugf("content :%v\n", content)
 
+		mainWork()
 	},
 }
 
@@ -74,13 +81,13 @@ func checkArgs(args []string) (err error) {
 			return err
 		}
 	}
-	d := fi.Mode().IsDir()
+	isSingleFile = fi.Mode().IsRegular()
 	if isRecursive {
-		if !d {
+		if isSingleFile {
 			return errors.New("需要一个目录")
 		}
 	} else {
-		if d {
+		if !isSingleFile {
 			return errors.New("需要一个文件")
 		}
 	}
@@ -90,4 +97,65 @@ func checkArgs(args []string) (err error) {
 		log.SetLevel(log.DebugLevel)
 	}
 	return nil
+}
+func readPath(p string, fs *filePool.FileSet) {
+	d, err := ioutil.ReadDir(p)
+	if err != nil {
+		log.Errorf("get file err :%v\n", err)
+	}
+	for _, info := range d {
+		n := info.Name()
+		subp := p + "/" + n
+		if info.IsDir() {
+			readPath(subp, fs)
+			continue
+		} else {
+			if isReadableFile(subp) {
+				fs.Add(subp)
+				log.Debug("add file :" + subp)
+			}
+		}
+	}
+}
+
+func isReadableFile(name string) bool {
+	if strings.HasSuffix(name, ".doc") {
+		return true
+	}
+	if strings.HasSuffix(name, ".docx") {
+		return true
+	}
+	return false
+
+}
+
+func mainWork() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	fs := filePool.FileSetNew()
+	task := sech.TaskInit(sech.Key(content), runtime.NumCPU())
+	//todo 同时启动fs获取路径下的所有文件，task启动，初始化worker，等待
+	// 任务开始工作
+	//file pool subroutine
+	log.Debugf("sigle file :%v\n", isSingleFile)
+	if isSingleFile {
+		fs.Add(path)
+		log.Debug("add file :" + path)
+		task.Exec(fs)
+		return
+	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		readPath(path, fs)
+		wg.Done()
+		defer task.SetEnd(true)
+	}()
+	wg.Add(1)
+	go func() {
+		task.Exec(fs)
+		wg.Done()
+	}()
+
+	wg.Wait()
+	log.Infof("length of fs:%v\n", fs.Length())
 }

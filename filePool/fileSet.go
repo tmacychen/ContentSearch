@@ -28,6 +28,8 @@ func (fs *FileSet) Add(s string) {
 	fs.fileChannels[fs.top] <- s
 }
 
+//bug:当work少于4个时，会堵塞在get中没有退出
+
 //Get the works get task from fileSet
 //是多个worker同时获取任务，获取文件路径为互斥的内容
 func (fs *FileSet) Get() string {
@@ -43,8 +45,9 @@ func (fs *FileSet) Get() string {
 
 //Length return the number of file in the current fileSet
 func (fs *FileSet) Length() int {
-	if fs.top == 0 {
-		return len(fs.fileChannels[fs.top])
+	sum := 0
+	for _, c := range fs.fileChannels {
+		sum += len(c)
 	}
-	return fs.top*bufferSize + len(fs.fileChannels[fs.top])
+	return sum
 }

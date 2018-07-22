@@ -12,7 +12,7 @@ var testLen = []struct {
 	{1, 1},
 	{10, 10},
 	{15, 15},
-	{100, 100},
+	//	{100, 100},
 }
 
 const MAX = 100
@@ -40,6 +40,11 @@ func TestFilePool(t *testing.T) {
 			s := fs.Get()
 			if s != target[i] {
 				pass = false
+			}
+			if fs.Length() != n-i-1 {
+				t.Errorf("test:expect len %d but GetLength() :%d ### NO PASS", n-i-1, fs.Length())
+			} else {
+				t.Logf("test:len %d GetLength() pass", n-i-1)
 			}
 		}
 		if pass {
