@@ -130,10 +130,11 @@ func (t *Task) ClearResult() {
 func (t *Task) getWorker() *Worker {
 	for i := 0; i < len(t.workers); i++ {
 		if !t.workers[i].IsBusy() {
-			t.workers[i].iamBusy(true)
+			t.workers[i].SetBusy(true)
 			return t.workers[i]
 		}
 	}
+	//log.Debug("get worker nil")
 	return nil
 }
 
@@ -143,18 +144,18 @@ func (t *Task) getWorker() *Worker {
 //并发执行对文件的解析，并对关键字查找.等待所有子线程结束后，退出
 func (t *Task) Exec(fs *filePool.FileSet) {
 	var wait sync.WaitGroup
-
 	for !t.end || fs.Length() > 0 {
 		w := t.getWorker()
 		if w != nil {
+			log.Debugf("get worker fs.len:%v\n", fs.Length())
 			wait.Add(1)
 			go func() {
 				s := fs.Get()
+				log.Debugf("end :%v \t len :%d \nExec fs.Get:%v\n", t.end, fs.Length(), s)
 				if s != "" {
 					w.Do(s, t.key, t.res)
-					log.Debugf("end :%v \t len :%d \nExec fs.Get:%v\n", t.end, fs.Length(), s)
 				}
-				w.iamBusy(false)
+				w.SetBusy(false)
 				wait.Done()
 			}()
 		} else {

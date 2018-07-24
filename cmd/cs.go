@@ -140,6 +140,7 @@ func mainWork() {
 	if isSingleFile {
 		fs.Add(path)
 		log.Debug("add file :" + path)
+		task.SetEnd(true)
 		task.Exec(fs)
 		return
 	}
@@ -147,13 +148,14 @@ func mainWork() {
 	wg.Add(1)
 	go func() {
 		readPath(path, fs)
-		wg.Done()
-		defer task.SetEnd(true)
+		task.SetEnd(true)
+		log.Debugf("set end success")
+		defer wg.Done()
 	}()
 	wg.Add(1)
 	go func() {
 		task.Exec(fs)
-		wg.Done()
+		defer wg.Done()
 	}()
 
 	wg.Wait()

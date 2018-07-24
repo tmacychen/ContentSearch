@@ -37,7 +37,7 @@ func (w *Worker) Do(filePath string, key Key, res *Result) {
 	w.parser.ClearBuf()
 }
 
-func (w *Worker) iamBusy(s bool) {
+func (w *Worker) SetBusy(s bool) {
 	w.isWorking = s
 }
 

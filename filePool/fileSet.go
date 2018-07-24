@@ -28,14 +28,12 @@ func (fs *FileSet) Add(s string) {
 	fs.fileChannels[fs.top] <- s
 }
 
-//bug:当work少于4个时，会堵塞在get中没有退出
-
 //Get the works get task from fileSet
 //是多个worker同时获取任务，获取文件路径为互斥的内容
 func (fs *FileSet) Get() string {
-	for _, c := range fs.fileChannels {
+	for i := 0; i < len(fs.fileChannels); i++ {
 		select {
-		case s := <-c:
+		case s := <-fs.fileChannels[i]:
 			return s
 		default:
 		}
