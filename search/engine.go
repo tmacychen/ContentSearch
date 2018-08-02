@@ -1,14 +1,17 @@
 package search
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/apex/log"
+	"github.com/apex/log/handlers/text"
 	"github.com/tmacychen/ContentSearch/filePool"
 )
 
-//Key 要检索的关键字符串
+//Key 要检索的关键词
 type Key string
 
 type item struct {
@@ -64,6 +67,12 @@ func (r *Result) ItemLen() int {
 }
 
 //Task 一次任务，描述了一次搜索的执行.It's what the workers do.
+//key 表示搜索的关键词
+//res 表示搜索结果
+//workerNum 表示需要工人数量
+//end 表示此次任务是否结束
+//workers 工人集合
+
 type Task struct {
 	key       Key
 	res       *Result
@@ -147,7 +156,7 @@ func (t *Task) Exec(fs *filePool.FileSet) {
 	for !t.end || fs.Length() > 0 {
 		w := t.getWorker()
 		if w != nil {
-			log.Debugf("get worker fs.len:%v\n", fs.Length())
+			log.Infof("get worker fs.len:%v\n", fs.Length())
 			wait.Add(1)
 			go func() {
 				s := fs.Get()
@@ -166,7 +175,11 @@ func (t *Task) Exec(fs *filePool.FileSet) {
 	wait.Wait()
 }
 
-//Debug 调试用
-func (t *Task) Debug() {
-	log.Debugf("t.key:%v\n", t.GetKey())
+// ShowResult 显示结果
+func (t *Task) ShowResult() {
+	for i := 0; i < t.res.ItemLen(); i++ {
+		s := strings.Split(t.res.GetContent(i), string(t.key))
+		fmt.Printf("\033[%dm%6s\033[0m: %s\033[%dm%s\033[0m%s\n",
+			text.Colors[log.InfoLevel], t.res.GetName(i), s[0], text.Colors[log.ErrorLevel], t.key, s[1])
+	}
 }

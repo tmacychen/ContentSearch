@@ -159,5 +159,5 @@ func mainWork() {
 	}()
 
 	wg.Wait()
-	log.Infof("length of fs:%v\n", fs.Length())
+	task.ShowResult()
 }
