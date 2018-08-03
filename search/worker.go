@@ -61,7 +61,7 @@ func search(p *docParse.Parser, k Key, res *Result) {
 		n := strings.Index(b, string(k))
 		var r string
 		//if find the key word, put it to result slice
-		//if not ,go return
+		//if not ,go to return
 		if n != -1 {
 			a := n + lenOfKey
 
@@ -82,14 +82,13 @@ func search(p *docParse.Parser, k Key, res *Result) {
 				r = cleanUnreadableSymbol(b)
 				r = strings.Replace(r, string(l1), string(space), -1) // 清除要显示内容中的回车与换行,换成空格
 				r = strings.Replace(r, string(l2), string(space), -1) // 清除要显示内容中的换行,换成空格
-				//log.Printf("the Conntent is %v\n", string(r))
-				res.AddOneItem(p.Path(), p.FileName(), r)
+				res.AddOneItem(p.Path(), r)
 				return
 			}
 			r = strings.Replace(r, string(l1), string(space), -1) // 清除要显示内容中的回车与换行,换成空格
 			r = strings.Replace(r, string(l2), string(space), -1) // 清除要显示内容中的换行,换成空格
 			//log.Printf("the Conntent is %v\n", string(r))
-			res.AddOneItem(p.Path(), p.FileName(), r)
+			res.AddOneItem(p.Path(), r)
 
 		} else {
 			return

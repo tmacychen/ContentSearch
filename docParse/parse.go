@@ -41,10 +41,6 @@ func (p *Parser) Init(path string) error {
 func (p *Parser) Path() string {
 	return p.path
 }
-func (p *Parser) FileName() string {
-	s := strings.Split(p.path, "/")
-	return s[len(s)-1]
-}
 func (p *Parser) Parse() {
 	p.parserFunc(p.path, p.buf)
 }
@@ -54,9 +50,3 @@ func (p *Parser) ClearBuf() {
 func (p *Parser) GetBuf() *bytes.Buffer {
 	return p.buf
 }
-
-//ShowBuf
-//func (p *Parser) ShowBuf() {
-//	fmt.Printf("buf :%v\n", p.buf)
-//}
-//

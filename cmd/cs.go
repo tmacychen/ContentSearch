@@ -40,8 +40,7 @@ var csCmd = &cobra.Command{
 			cmd.Usage()
 			os.Exit(1)
 		}
-		log.Debugf("path :%v\n", path)
-		log.Debugf("content :%v\n", content)
+		log.Debugf("path :%v content :%v\n", path, content)
 
 		mainWork()
 	},
@@ -159,5 +158,6 @@ func mainWork() {
 	}()
 
 	wg.Wait()
+	log.Info("")
 	task.ShowResult()
 }

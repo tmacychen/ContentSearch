@@ -2,6 +2,7 @@ package search
 
 import (
 	"fmt"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -15,9 +16,8 @@ import (
 type Key string
 
 type item struct {
-	absPath  string // 绝对路径
-	fileName string //文件名称
-	content  string //内容
+	path    string   // 绝对路径
+	content []string //内容
 }
 
 //Result 搜索结果
@@ -27,17 +27,26 @@ type Result struct {
 }
 
 //AddOneItem 增加一个结果，并发安全！
-func (r *Result) AddOneItem(path, name, content string) {
-	i := item{path, name, content}
+func (r *Result) AddOneItem(path, content string) {
 	r.locker.Lock()
+	defer r.locker.Unlock()
+
+	for i := 0; i < len(r.v); i++ {
+		if r.v[i].path == path {
+			r.v[i].content = append(r.v[i].content, content)
+			return
+		}
+	}
+	i := item{}
+	i.path = path
+	i.content = append(i.content, content)
 	r.v = append(r.v, i)
-	r.locker.Unlock()
 }
 
 //GetPath get the item's file path
 func (r *Result) GetPath(i int) string {
 	if i >= 0 && i < len(r.v) {
-		return r.v[i].absPath
+		return r.v[i].path
 	} else {
 		return ""
 	}
@@ -46,20 +55,20 @@ func (r *Result) GetPath(i int) string {
 //GetName get the item's file's name
 func (r *Result) GetName(i int) string {
 	if i >= 0 && i < len(r.v) {
-		return r.v[i].fileName
+		return path.Base(r.v[i].path)
 	} else {
 		return ""
 	}
 }
 
 //GetContent get the item's content
-func (r *Result) GetContent(i int) string {
-	if i >= 0 && i < len(r.v) {
-		return r.v[i].content
-	} else {
-		return ""
-	}
-}
+// func (r *Result) GetContent(i int) string {
+// 	if i >= 0 && i < len(r.v) {
+// 		return r.v[i].content
+// 	} else {
+// 		return ""
+// 	}
+// }
 
 //ItemLen return the length of items
 func (r *Result) ItemLen() int {
@@ -143,7 +152,6 @@ func (t *Task) getWorker() *Worker {
 			return t.workers[i]
 		}
 	}
-	//log.Debug("get worker nil")
 	return nil
 }
 
@@ -156,11 +164,12 @@ func (t *Task) Exec(fs *filePool.FileSet) {
 	for !t.end || fs.Length() > 0 {
 		w := t.getWorker()
 		if w != nil {
-			log.Infof("get worker fs.len:%v\n", fs.Length())
+			log.Debugf("get worker fs.len:%v\n", fs.Length())
 			wait.Add(1)
 			go func() {
 				s := fs.Get()
 				log.Debugf("end :%v \t len :%d \nExec fs.Get:%v\n", t.end, fs.Length(), s)
+				fmt.Printf(">")
 				if s != "" {
 					w.Do(s, t.key, t.res)
 				}
@@ -178,8 +187,10 @@ func (t *Task) Exec(fs *filePool.FileSet) {
 // ShowResult 显示结果
 func (t *Task) ShowResult() {
 	for i := 0; i < t.res.ItemLen(); i++ {
-		s := strings.Split(t.res.GetContent(i), string(t.key))
-		fmt.Printf("\033[%dm%6s\033[0m: %s\033[%dm%s\033[0m%s\n",
-			text.Colors[log.InfoLevel], t.res.GetName(i), s[0], text.Colors[log.ErrorLevel], t.key, s[1])
+		fmt.Printf("\033[%dm%6s\n", text.Colors[log.InfoLevel], t.res.GetName(i))
+		for j := 0; j < len(t.res.v[i].content); j++ {
+			s := strings.Split(t.res.v[i].content[j], string(t.key))
+			fmt.Printf("\t\033[0m%s\033[%dm%s\033[0m%s\n", s[0], text.Colors[log.ErrorLevel], t.key, s[1])
+		}
 	}
 }
