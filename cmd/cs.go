@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "0.5"
+var version = "0.9"
 var isRecursive bool
 var isDebug bool
 var isSingleFile bool
@@ -51,9 +51,9 @@ var csCmd = &cobra.Command{
 func init() {
 	log.SetHandler(cli.Default)
 	log.SetLevel(log.InfoLevel)
-	csCmd.PersistentFlags().BoolVarP(&isRecursive, "recursive", "r", false, "recursive for directory")
-	csCmd.PersistentFlags().BoolVarP(&isDebug, "debug", "d", false, "debug mode")
-	csCmd.PersistentFlags().IntVarP(&threads, "threads", "t", runtime.NumCPU(), "multi threads")
+	csCmd.PersistentFlags().BoolVarP(&isRecursive, "recursive", "r", false, "recursive for directory/在目录中搜索")
+	csCmd.PersistentFlags().BoolVarP(&isDebug, "debug", "d", false, "debug mode/调试模式")
+	csCmd.PersistentFlags().IntVarP(&threads, "threads", "t", runtime.NumCPU(), "multi goroutines >= 4/更多的线程，最好大于4")
 }
 
 //Execute : execute the csCmd
@@ -66,7 +66,7 @@ func Execute() {
 
 func checkArgs(args []string) (err error) {
 	if len(args) < 2 {
-		return errors.New("需要两个参数，请检查一下命令是否正确")
+		return errors.New("需要两个参数，请检查一下!!")
 	}
 	content = args[0]
 	path = args[1]
@@ -86,11 +86,11 @@ func checkArgs(args []string) (err error) {
 	isSingleFile = fi.Mode().IsRegular()
 	if isRecursive {
 		if isSingleFile {
-			return errors.New("需要一个目录")
+			return errors.New("需要一个目录,请再检查一下！")
 		}
 	} else {
 		if !isSingleFile {
-			return errors.New("需要一个文件")
+			return errors.New("需要一个文件,请再检查一下!")
 		}
 	}
 	if isDebug {

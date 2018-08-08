@@ -5,7 +5,6 @@ SOURCES := $(shell find $(SOURCEDIR) -name '*.go')
 
 BINARY=cs
 
-VERSION=0.0.1
 BUILD_TIME=`date +%FT%T%z`
 
 
@@ -18,7 +17,6 @@ GOTEST=$(GOCMD) test
 GOFMT=gofmt -w
 
 #LDFLAGS=-ldflags 
-#"-X github.com/ariejan/roll/core.Version=${VERSION} -X github.com/ariejan/roll/core.BuildTime=${BUILD_TIME}"
 
 .DEFAULT_GOAL: $(BINARY)
 
