@@ -4,10 +4,7 @@ import (
 	"os"
 	"runtime/pprof"
 
-	"runtime"
-
 	"github.com/apex/log"
-
 	"github.com/tmacychen/ContentSearch/cmd"
 )
 
@@ -24,11 +21,11 @@ func main() {
 		os.Exit(1)
 	}
 	defer m.Close()
-	runtime.GC()
-	if e := pprof.WriteHeapProfile(m); e != nil {
-		log.Fatalf("mem prof err :%v\n", e)
-	}
+
 	pprof.StartCPUProfile(f)
 	cmd.Execute()
 	pprof.StopCPUProfile()
+	if e := pprof.WriteHeapProfile(m); e != nil {
+		log.Fatalf("mem prof err :%v\n", e)
+	}
 }
