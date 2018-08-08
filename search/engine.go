@@ -2,7 +2,7 @@ package search
 
 import (
 	"fmt"
-	"path"
+	//	"path"
 	"strings"
 	"sync"
 	"time"
@@ -55,7 +55,7 @@ func (r *Result) GetPath(i int) string {
 //GetName get the item's file's name
 func (r *Result) GetName(i int) string {
 	if i >= 0 && i < len(r.v) {
-		return path.Base(r.v[i].path)
+		return r.v[i].path
 	} else {
 		return ""
 	}

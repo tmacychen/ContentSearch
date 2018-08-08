@@ -6,45 +6,60 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
+	"github.com/apex/log"
 	"io"
 	"os"
 	"os/exec"
-
-	"oschina.net/ContentSearch/myerr"
 )
 
 func docxParse(filePath string, buf *bytes.Buffer) {
 	var file *zip.File
+
 	f, e := os.OpenFile(filePath, os.O_RDONLY, 0440)
-	myerr.PrintErr("OpenFile error :", e)
+	if e != nil {
+		log.Fatalf("OpenFile [%v] :%v\n", filePath, e)
+	}
 	defer f.Close()
 
 	zipReader, e := zip.OpenReader(filePath)
-	myerr.PrintErr("open docx file error", e)
+	if e != nil {
+		log.Fatalf("Open docx file [%v] error :%v\n", filePath, e)
+	}
 	defer zipReader.Close()
+
 	for _, f := range zipReader.File {
 		if f.Name == "word/document.xml" {
 			file = f
 		}
 	}
 	if file == nil {
-		myerr.PrintErr("docx parser don't found document", errors.New("no found docx document"))
+		log.Fatalf("docx parser don't found document%v\n", errors.New("no found docx document"))
 	}
 	fileReader, e := file.Open()
-	myerr.PrintErr("fileReader open error ", e)
+	if e != nil {
+		log.Fatalf("fileReader open %v\n", e)
+	}
+
 	textBuf := new(bytes.Buffer)
 	e = XMLToText(fileReader, textBuf, []string{"br", "p", "tab"}, []string{"instrText", "script"}, true)
-	myerr.PrintErr("xml to text", e)
+	if e != nil {
+		log.Fatalf("xml to text %v\n", e)
+
+	}
 
 	tr1 := exec.Command("tr", "-d", "\" \"")
 	tr1.Stdin = bufio.NewReader(textBuf)
 	tr1Reader, e := tr1.StdoutPipe()
-	myerr.PrintErr("tr1:", e)
+	if e != nil {
+		log.Fatalf("tr1: %v\n", e)
+	}
 
 	tr2 := exec.Command("tr", "-s", "\n")
 	tr2.Stdin = tr1Reader
 	tr2Reader, e := tr2.StdoutPipe()
-	myerr.PrintErr("tr2:", e)
+	if e != nil {
+		log.Fatalf("tr2: %v\n", e)
+	}
 
 	tr1.Start()
 	tr2.Start()

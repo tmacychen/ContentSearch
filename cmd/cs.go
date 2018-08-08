@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	pkgPath "path"
 	"runtime"
 	"strings"
 	"sync"
@@ -23,6 +24,7 @@ var isRecursive bool
 var isDebug bool
 var isSingleFile bool
 var content, path string
+var threads int
 
 var csCmd = &cobra.Command{
 	Use:   "cs [选项] [搜索的内容] [需要搜索的文件夹路径]",
@@ -51,6 +53,7 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 	csCmd.PersistentFlags().BoolVarP(&isRecursive, "recursive", "r", false, "recursive for directory")
 	csCmd.PersistentFlags().BoolVarP(&isDebug, "debug", "d", false, "debug mode")
+	csCmd.PersistentFlags().IntVarP(&threads, "threads", "t", runtime.NumCPU(), "multi threads")
 }
 
 //Execute : execute the csCmd
@@ -118,10 +121,14 @@ func readPath(p string, fs *filePool.FileSet) {
 }
 
 func isReadableFile(name string) bool {
-	if strings.HasSuffix(name, ".doc") {
+	b := pkgPath.Base(name)
+	if strings.HasPrefix(b, ".") {
+		return false
+	}
+	if strings.HasSuffix(b, ".doc") {
 		return true
 	}
-	if strings.HasSuffix(name, ".docx") {
+	if strings.HasSuffix(b, ".docx") {
 		return true
 	}
 	return false
@@ -129,7 +136,8 @@ func isReadableFile(name string) bool {
 }
 
 func mainWork() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	log.Infof("threads:%v", threads)
+	log.Infof("GOMAXPROCS : %v", runtime.GOMAXPROCS(threads))
 	fs := filePool.FileSetNew()
 	task := sech.TaskInit(sech.Key(content), runtime.NumCPU())
 	//todo 同时启动fs获取路径下的所有文件，task启动，初始化worker，等待
@@ -141,6 +149,8 @@ func mainWork() {
 		log.Debug("add file :" + path)
 		task.SetEnd(true)
 		task.Exec(fs)
+		log.Info("")
+		task.ShowResult()
 		return
 	}
 	var wg sync.WaitGroup

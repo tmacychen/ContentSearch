@@ -28,7 +28,7 @@ $(BINARY): $(SOURCES)
 run :
 	go run main.go
 install:
-#	    go install ${LDFLAGS} ./...
+	sudo mv ./cs /usr/local/bin 
 
 .PHONY: clean
 clean:
