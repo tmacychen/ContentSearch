@@ -6,20 +6,14 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
-	"github.com/apex/log"
 	"io"
-	"os"
 	"os/exec"
+
+	"github.com/apex/log"
 )
 
 func docxParse(filePath string, buf *bytes.Buffer) {
 	var file *zip.File
-
-	f, e := os.OpenFile(filePath, os.O_RDONLY, 0440)
-	if e != nil {
-		log.Fatalf("OpenFile [%v] :%v\n", filePath, e)
-	}
-	defer f.Close()
 
 	zipReader, e := zip.OpenReader(filePath)
 	if e != nil {
@@ -39,8 +33,11 @@ func docxParse(filePath string, buf *bytes.Buffer) {
 	if e != nil {
 		log.Fatalf("fileReader open %v\n", e)
 	}
-
 	textBuf := new(bytes.Buffer)
+
+	//fInfo := file.FileInfo()
+	//log.Infof("size (k):%v\n", fInfo.Size()/1024) // the unzip file size
+
 	e = XMLToText(fileReader, textBuf, []string{"br", "p", "tab"}, []string{"instrText", "script"}, true)
 	if e != nil {
 		log.Fatalf("xml to text %v\n", e)
@@ -67,7 +64,7 @@ func docxParse(filePath string, buf *bytes.Buffer) {
 	buf.ReadFrom(tr2Reader)
 }
 
-// Convert XML to plain text given how to treat elements
+// XMLToText Convert XML to plain text given how to treat elements
 func XMLToText(r io.Reader, buf *bytes.Buffer, breaks []string, skip []string, strict bool) error {
 
 	dec := xml.NewDecoder(r)
@@ -83,11 +80,11 @@ func XMLToText(r io.Reader, buf *bytes.Buffer, breaks []string, skip []string, s
 
 		switch v := t.(type) {
 		case xml.CharData:
-			buf.WriteString(string(v))
+			buf.Write([]byte(v))
 		case xml.StartElement:
 			for _, breakElement := range breaks {
 				if v.Name.Local == breakElement {
-					buf.WriteString("\n")
+					buf.Write([]byte("\n"))
 				}
 			}
 			for _, skipElement := range skip {
