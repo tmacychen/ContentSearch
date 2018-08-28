@@ -137,9 +137,9 @@ func isReadableFile(name string) bool {
 
 func mainWork() {
 	log.Infof("threads:%v", threads)
-	log.Infof("GOMAXPROCS : %v", runtime.GOMAXPROCS(threads))
+	runtime.GOMAXPROCS(threads)
 	fs := filePool.FileSetNew()
-	task := sech.TaskInit(sech.Key(content), runtime.NumCPU())
+	task := sech.TaskInit(sech.Key(content), threads)
 	//todo 同时启动fs获取路径下的所有文件，task启动，初始化worker，等待
 	// 任务开始工作
 	//file pool subroutine
